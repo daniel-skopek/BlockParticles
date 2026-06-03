@@ -17,13 +17,19 @@ public class HeadDatabaseHook {
     private static HeadDatabaseAPI headDatabaseAPI;
     
     public HeadDatabaseHook() {
-        if (fusion.isModReady(ModSupport.head_database)) {
+        initApi();
+    }
+    
+    private static void initApi() {
+        if (headDatabaseAPI == null && fusion.isModReady(ModSupport.head_database)) {
             headDatabaseAPI = new HeadDatabaseAPI();
         }
     }
     
     public static ItemStack getHead(String head) {
-        if (fusion.isModReady(ModSupport.head_database)) {
+        initApi();
+        
+        if (headDatabaseAPI != null) {
             return headDatabaseAPI.getItemHead(head);
         }
         
