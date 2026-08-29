@@ -5,16 +5,9 @@ import com.badbones69.blockparticles.api.enums.particles.CustomParticles;
 import com.ryderbelserion.fusion.paper.scheduler.FoliaScheduler;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.bukkit.*;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
-import org.bukkit.util.NumberConversions;
-import org.bukkit.util.Vector;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Particles implements ParticleControl {
 
@@ -23,16 +16,15 @@ public class Particles implements ParticleControl {
     
     private final Map<String, ScheduledTask> locations = new HashMap<>();
     private final int range = 25;
-    private final Random random = new Random();
     
     private Location randomDrop(Location location) {
-        double x = random.nextInt(100) / 100.0 - .50;
-        double z = random.nextInt(100) / 100.0 - .50;
+        double x = ThreadLocalRandom.current().nextInt(100) / 100.0 - .50;
+        double z = ThreadLocalRandom.current().nextInt(100) / 100.0 - .50;
         return location.add(x, 0, z);
     }
     
     private float randomVector() {
-        return (float) -.05 + (float) (Math.random() * ((.05 - -.05)));
+        return (float) (-.05 + ThreadLocalRandom.current().nextDouble(.1));
     }
 
     @Override
@@ -60,13 +52,15 @@ public class Particles implements ParticleControl {
             final Location l = location.clone().add(.5, .1, .5);
 
             final World world = location.getWorld();
+            final Location[] circle1 = circle(l, 1, 15);
+            final Location[] circle2 = circle(l, 2, 25);
 
             @Override
             public void run() {
-                if (noPlayers(l.clone(), range)) return;
-                for (Location location : getCircle(l, 1, 15))
+                if (noPlayers(l, range)) return;
+                for (Location location : circle1)
                     world.spawnParticle(Particle.FLAME, location, 1, 0, 0, 0, 0);
-                for (Location location : getCircle(l, 2, 25))
+                for (Location location : circle2)
                     world.spawnParticle(Particle.FLAME, location, 1, 0, 0, 0, 0);
             }
         }.runAtFixedRate(0, 5));
@@ -74,16 +68,18 @@ public class Particles implements ParticleControl {
     
     public void playFlame(final Location location, String id) {
         locations.put(id, new FoliaScheduler(this.plugin, location) {
-            final Location l = location.add(.5, .1, .5);
+            final Location l = location.clone().add(.5, .1, .5);
 
             final World world = location.getWorld();
+            final Location[] circle1 = circle(l, .6, 15);
+            final Location[] circle2 = circle(l, 1, 20);
 
             @Override
             public void run() {
-                if (noPlayers(l.clone(), range)) return;
-                for (Location location : getCircle(l, .6, 15))
+                if (noPlayers(l, range)) return;
+                for (Location location : circle1)
                     world.spawnParticle(Particle.FLAME, location, 1, 0, 0, 0, 0);
-                for (Location location : getCircle(l, 1, 20))
+                for (Location location : circle2)
                     world.spawnParticle(Particle.FLAME, location, 1, 0, 0, 0, 0);
             }
         }.runAtFixedRate(0, 5));
@@ -244,14 +240,15 @@ public class Particles implements ParticleControl {
     
     public void playBigCrit(final Location location, String id) {
         locations.put(id, new FoliaScheduler(this.plugin, location) {
-            final Location l = location.add(.5, .5, .5);
+            final Location l = location.clone().add(.5, .5, .5);
 
             final World world = location.getWorld();
+            final Location[] circle = circle(l, 2, 20);
 
             @Override
             public void run() {
-                if (noPlayers(l.clone(), range)) return;
-                for (Location location : getCircle(l, 2, 20))
+                if (noPlayers(l, range)) return;
+                for (Location location : circle)
                     world.spawnParticle(Particle.CRIT, location, 1, 0, 0, 0, 0);
             }
         }.runAtFixedRate(0, 2));
@@ -413,24 +410,24 @@ public class Particles implements ParticleControl {
     
     public void playMusic(final Location location, String id) {
         locations.put(id, new FoliaScheduler(this.plugin, location) {
-            final Location l = location.add(.5, .2, .5);
-            final ArrayList<Location> locs = getCircle(l, 1, 16);
+            final Location l = location.clone().add(.5, .2, .5);
+            final Location[] locs = circle(l, 1, 16);
             int time = 0;
 
             final World world = location.getWorld();
 
             @Override
             public void run() {
-                if (noPlayers(l.clone(), range)) return;
+                if (noPlayers(l, range)) return;
                 int i = time;
 
                 switch (time) {
                     case 15 -> {
-                        world.spawnParticle(Particle.NOTE, locs.get(i), 1, 0, 0, 0, randomColor());
+                        world.spawnParticle(Particle.NOTE, locs[i], 1, 0, 0, 0, randomColor());
                         time = -1;
                     }
 
-                    case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 -> world.spawnParticle(Particle.NOTE, locs.get(i), 1, 0, 0, 0, randomColor());
+                    case 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 -> world.spawnParticle(Particle.NOTE, locs[i], 1, 0, 0, 0, randomColor());
                 }
 
                 time++;
@@ -668,6 +665,7 @@ public class Particles implements ParticleControl {
             @Override
             public void run() {
                 if (noPlayers(l.clone(), range)) return;
+                ThreadLocalRandom random = ThreadLocalRandom.current();
                 int r = random.nextInt(255);
                 int g = random.nextInt(255);
                 int b = random.nextInt(255);
@@ -741,36 +739,48 @@ public class Particles implements ParticleControl {
             final Location l11 = l10.clone().add(0, .05, 0);
 
             final World world = location.getWorld();
+            final Particle.DustOptions red = new Particle.DustOptions(Color.RED, 1);
+            final Particle.DustOptions white = new Particle.DustOptions(Color.fromRGB(255, 255, 255), 1);
+
+            final Location[] c1 = circle(l1, .5, 20);
+            final Location[] c2 = circle(l2, .4, 15);
+            final Location[] c3 = circle(l3, .35, 15);
+            final Location[] c4 = circle(l4, .3, 15);
+            final Location[] c5 = circle(l5, .2, 15);
+            final Location[] c6 = circle(l6, .15, 15);
+            final Location[] c7 = circle(l7, .1, 15);
+            final Location[] c8 = circle(l8, .05, 10);
+            final Location[] c9 = circle(l9, .05, 10);
+            final Location[] c10 = circle(l10, .05, 15);
+            final Location[] c11 = circle(l11, .05, 15);
 
             @Override
             public void run() {
-                if (noPlayers(l1.clone(), 20)) return;
+                if (noPlayers(l1, 20)) return;
                 try {
                     for (int i = 0; i < 3; i++) {
-                        Color red = Color.RED;
-                        Color white = Color.fromRGB(255, 255, 255);
-                        for (Location location : getCircle(l1, .5, 20))
-                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, new Particle.DustOptions(white, 1));
-                        for (Location location : getCircle(l2, .4, 15))
-                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, new Particle.DustOptions(red, 1));
-                        for (Location location : getCircle(l3, .35, 15))
-                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, new Particle.DustOptions(red, 1));
-                        for (Location location : getCircle(l4, .3, 15))
-                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, new Particle.DustOptions(red, 1));
-                        for (Location location : getCircle(l5, .2, 15))
-                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, new Particle.DustOptions(red, 1));
-                        for (Location location : getCircle(l6, .15, 15))
-                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, new Particle.DustOptions(red, 1));
-                        for (Location location : getCircle(l7, .1, 15))
-                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, new Particle.DustOptions(red, 1));
-                        for (Location location : getCircle(l8, .05, 10))
-                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, new Particle.DustOptions(red, 1));
-                        for (Location location : getCircle(l9, .05, 10))
-                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, new Particle.DustOptions(red, 1));
-                        for (Location location : getCircle(l10, .05, 15))
-                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, new Particle.DustOptions(white, 1));
-                        for (Location location : getCircle(l11, .05, 15))
-                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, new Particle.DustOptions(white, 1));
+                        for (Location location : c1)
+                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, white);
+                        for (Location location : c2)
+                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, red);
+                        for (Location location : c3)
+                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, red);
+                        for (Location location : c4)
+                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, red);
+                        for (Location location : c5)
+                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, red);
+                        for (Location location : c6)
+                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, red);
+                        for (Location location : c7)
+                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, red);
+                        for (Location location : c8)
+                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, red);
+                        for (Location location : c9)
+                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, red);
+                        for (Location location : c10)
+                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, white);
+                        for (Location location : c11)
+                            world.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, 0, white);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -786,19 +796,21 @@ public class Particles implements ParticleControl {
             final Location l = location.clone().add(.5, 0, .5);
 
             void startSoulWell(final Location location, final String id) {
-                final int num = random.nextInt(Integer.MAX_VALUE);
+                final int num = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
 
                 S.put(num, new FoliaScheduler(plugin, location) {
                     final Location height = location.clone();
+                    final World world = height.getWorld();
                     int loc = 0;
                     int lifeSpan = 0;
 
                     @Override
                     public void run() {
-                        ArrayList<Location> locs = getCircle(height, 2, 50);
-                        ArrayList<Location> locs2 = getCircleReverse(height, 2, 50);
-                        height.getWorld().spawnParticle(Particle.WITCH, locs.get(loc), 1, 0, 0, 0, 0);
-                        height.getWorld().spawnParticle(Particle.WITCH, locs2.get(loc), 1, 0, 0, 0, 0);
+                        double angle = (2 * Math.PI * loc) / 50;
+                        double dx = 2 * Math.cos(angle);
+                        double dz = 2 * Math.sin(angle);
+                        world.spawnParticle(Particle.WITCH, height.clone().add(dx, 0, dz), 1, 0, 0, 0, 0);
+                        world.spawnParticle(Particle.WITCH, height.clone().add(-dx, 0, -dz), 1, 0, 0, 0, 0);
                         loc++;
                         lifeSpan++;
                         height.add(0, .035, 0);
@@ -826,18 +838,20 @@ public class Particles implements ParticleControl {
             final Location l = location.clone().add(.5, 0, .5);
 
             void startBigSoulWell(final Location location, final String id) {
-                final int num = random.nextInt(Integer.MAX_VALUE);
+                final int num = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
                 S.put(num, new FoliaScheduler(plugin, location) {
                     final Location height = location.clone();
+                    final World world = height.getWorld();
                     int loc = 0;
                     int lifeSpan = 0;
 
                     @Override
                     public void run() {
-                        ArrayList<Location> locs = getCircle(height, 3.5, 75);
-                        ArrayList<Location> locs2 = getCircleReverse(height, 3.5, 75);
-                        height.getWorld().spawnParticle(Particle.WITCH, locs.get(loc), 1, 0, 0, 0, 0);
-                        height.getWorld().spawnParticle(Particle.WITCH, locs2.get(loc), 1, 0, 0, 0, 0);
+                        double angle = (2 * Math.PI * loc) / 75;
+                        double dx = 3.5 * Math.cos(angle);
+                        double dz = 3.5 * Math.sin(angle);
+                        world.spawnParticle(Particle.WITCH, height.clone().add(dx, 0, dz), 1, 0, 0, 0, 0);
+                        world.spawnParticle(Particle.WITCH, height.clone().add(-dx, 0, -dz), 1, 0, 0, 0, 0);
                         loc++;
                         lifeSpan++;
                         height.add(0, .04, 0);
@@ -865,37 +879,52 @@ public class Particles implements ParticleControl {
             final Location l = location.clone().add(.5, .1, .5);
 
             void startFlameWheel(final Location location) {
-                final int num = random.nextInt(Integer.MAX_VALUE);
+                final int num = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
                 S.put(num, new FoliaScheduler(plugin, location) {
-                    final Location l = location.clone();
+                    final Location center = location.clone();
+                    final World world = location.getWorld();
+                    final Location[] ring = new Location[75];
+                    final double[] dx = new double[75];
+                    final double[] dz = new double[75];
                     int i = 0;
                     int o = 74;
                     int f = 0;
                     int ringTimer = 0;
 
-                    final World world = location.getWorld();
+                    {
+                        double increment = (2 * Math.PI) / 75;
+                        for (int n = 0; n < 75; n++) {
+                            double angle = n * increment;
+                            dx[n] = 3.5 * Math.cos(angle);
+                            dz[n] = 3.5 * Math.sin(angle);
+                            ring[n] = center.clone().add(dx[n], 0, dz[n]);
+                        }
+                    }
 
                     @Override
                     public void run() {
-                        ArrayList<Location> locs = getCircle(l, 3.5, 75);
-                        ArrayList<Location> locs2 = getCircleReverse(l, 3.5, 75);
                         float speed = (float) .15;
-                        Vector v = locs.get(i).toVector().subtract(l.toVector()).normalize();
-                        Vector v2 = locs2.get(i).toVector().subtract(l.toVector()).normalize();
-                        Vector v3 = locs.get(o).toVector().subtract(l.toVector()).normalize();
-                        Vector v4 = locs2.get(o).toVector().subtract(l.toVector()).normalize();
+                        double invRadius = 1.0 / 3.5;
+                        double xi = dx[i];
+                        double zi = dz[i];
+                        double xo = dx[o];
+                        double zo = dz[o];
+                        float vxi = (float) (xi * invRadius);
+                        float vzi = (float) (zi * invRadius);
+                        float vxo = (float) (xo * invRadius);
+                        float vzo = (float) (zo * invRadius);
                         //Makes the ring around the edge
                         if (ringTimer == 10) {
-                            for (Location i : locs) {
-                                world.spawnParticle(Particle.FLAME, i, 0);
+                            for (Location location : ring) {
+                                world.spawnParticle(Particle.FLAME, location, 0);
                             }
                         }
 
                         //Throws the fire inwords.
-                        world.spawnParticle(Particle.FLAME, locs.get(i), 0, -v.getX(), 0, -v.getZ(), speed);
-                        world.spawnParticle(Particle.FLAME, locs2.get(i), 0, -v2.getX(), 0, -v2.getZ(), speed);
-                        world.spawnParticle(Particle.FLAME, locs.get(o), 0, -v3.getX(), 0, -v3.getZ(), speed);
-                        world.spawnParticle(Particle.FLAME, locs2.get(o), 0, -v4.getX(), 0, -v4.getZ(), speed);
+                        world.spawnParticle(Particle.FLAME, center.clone().add(xi, 0, zi), 0, -vxi, 0, -vzi, speed);
+                        world.spawnParticle(Particle.FLAME, center.clone().add(-xi, 0, -zi), 0, vxi, 0, vzi, speed);
+                        world.spawnParticle(Particle.FLAME, center.clone().add(xo, 0, zo), 0, -vxo, 0, -vzo, speed);
+                        world.spawnParticle(Particle.FLAME, center.clone().add(-xo, 0, -zo), 0, vxo, 0, vzo, speed);
                         i++;
                         f++;
                         o--;
@@ -926,9 +955,10 @@ public class Particles implements ParticleControl {
             final Location l = location.clone().add(.5, .1, .5);
 
             void startWitchTornado(final Location location) {
-                final int num = random.nextInt(Integer.MAX_VALUE);
+                final int num = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
                 S.put(num, new FoliaScheduler(plugin, location) {
                     final Location height = location.clone().add(0, 5, 0);
+                    final World world = height.getWorld();
                     int nextLocation = 0;
                     int diameterSwitch = 0;
                     double radius = 1.5;
@@ -936,8 +966,8 @@ public class Particles implements ParticleControl {
 
                     @Override
                     public void run() {
-                        ArrayList<Location> locs = getCircle(height, radius, 50);
-                        height.getWorld().spawnParticle(Particle.WITCH, locs.get(nextLocation), 0, 0, 0, 0, 1);
+                        double angle = (2 * Math.PI * nextLocation) / 50;
+                        world.spawnParticle(Particle.WITCH, height.clone().add(radius * Math.cos(angle), 0, radius * Math.sin(angle)), 0, 0, 0, 0, 1);
                         nextLocation++;
                         diameterSwitch++;
                         lifeSpan++;
@@ -970,10 +1000,11 @@ public class Particles implements ParticleControl {
             final Location l = location.clone().add(.5, 0, .5);
 
             void startLoveTornado(final Location location) {
-                final int num = random.nextInt(Integer.MAX_VALUE);
+                final int num = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
                 S.put(num, new FoliaScheduler(plugin, location) {
 
                     final Location height = location.clone().add(0, 5, 0);
+                    final World world = height.getWorld();
                     int diameterShrink = 0;
                     double radius = 1.5;
                     int lifeSpan = 0;
@@ -981,8 +1012,8 @@ public class Particles implements ParticleControl {
 
                     @Override
                     public void run() {
-                        ArrayList<Location> locs = getCircle(height, radius, 50);
-                        height.getWorld().spawnParticle(Particle.HEART, locs.get(nextLocation), 0, 0, 0, 0, 1);
+                        double angle = (2 * Math.PI * nextLocation) / 50;
+                        world.spawnParticle(Particle.HEART, height.clone().add(radius * Math.cos(angle), 0, radius * Math.sin(angle)), 0, 0, 0, 0, 1);
                         diameterShrink++;
                         lifeSpan++;
                         nextLocation++;
@@ -1015,18 +1046,20 @@ public class Particles implements ParticleControl {
             final Location l = location.clone().add(.5, 0, .5);
 
             void startBigLoveWell(final Location location) {
-                final int num = random.nextInt(Integer.MAX_VALUE);
+                final int num = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
                 S.put(num, new FoliaScheduler(plugin, location) {
                     final Location height = location.clone();
+                    final World world = height.getWorld();
                     int loc = 0;
                     int lifeSpan = 0;
 
                     @Override
                     public void run() {
-                        ArrayList<Location> locs = getCircle(height, 3.5, 75);
-                        ArrayList<Location> locs2 = getCircleReverse(height, 3.5, 75);
-                        height.getWorld().spawnParticle(Particle.HEART, locs.get(loc), 1, 0, 0, 0, 0);
-                        height.getWorld().spawnParticle(Particle.HEART, locs2.get(loc), 1, 0, 0, 0, 0);
+                        double angle = (2 * Math.PI * loc) / 75;
+                        double dx = 3.5 * Math.cos(angle);
+                        double dz = 3.5 * Math.sin(angle);
+                        world.spawnParticle(Particle.HEART, height.clone().add(dx, 0, dz), 1, 0, 0, 0, 0);
+                        world.spawnParticle(Particle.HEART, height.clone().add(-dx, 0, -dz), 1, 0, 0, 0, 0);
                         loc++;
                         lifeSpan++;
                         height.add(0, .04, 0);
@@ -1054,18 +1087,20 @@ public class Particles implements ParticleControl {
             Location l = location.clone().add(.5, 0, .5);
 
             void startLoveWell(final Location location) {
-                final int num = random.nextInt(Integer.MAX_VALUE);
+                final int num = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
                 S.put(num, new FoliaScheduler(plugin, location) {
                     final Location height = location.clone();
+                    final World world = height.getWorld();
                     int loc = 0;
                     int lifeSpan = 0;
 
                     @Override
                     public void run() {
-                        ArrayList<Location> locs = getCircle(height, 2, 50);
-                        ArrayList<Location> locs2 = getCircleReverse(height, 2, 50);
-                        height.getWorld().spawnParticle(Particle.HEART, locs.get(loc), 1, 0, 0, 0, 0);
-                        height.getWorld().spawnParticle(Particle.HEART, locs2.get(loc), 1, 0, 0, 0, 0);
+                        double angle = (2 * Math.PI * loc) / 50;
+                        double dx = 2 * Math.cos(angle);
+                        double dz = 2 * Math.sin(angle);
+                        world.spawnParticle(Particle.HEART, height.clone().add(dx, 0, dz), 1, 0, 0, 0, 0);
+                        world.spawnParticle(Particle.HEART, height.clone().add(-dx, 0, -dz), 1, 0, 0, 0, 0);
                         loc++;
                         lifeSpan++;
                         height.add(0, .035, 0);
@@ -1086,67 +1121,28 @@ public class Particles implements ParticleControl {
         }.runAtFixedRate(0, 16));
     }
     
-    private ArrayList<Location> getCircle(Location center, double radius, int amount) {
+    private static Location[] circle(Location center, double radius, int amount) {
         World world = center.getWorld();
         double increment = (2 * Math.PI) / amount;
-        ArrayList<Location> locations = new ArrayList<>();
+        double cx = center.getX();
+        double cy = center.getY();
+        double cz = center.getZ();
+        Location[] locations = new Location[amount];
 
         for (int i = 0; i < amount; i++) {
             double angle = i * increment;
-            double x = center.getX() + (radius * Math.cos(angle));
-            double z = center.getZ() + (radius * Math.sin(angle));
-            locations.add(new Location(world, x, center.getY(), z));
+            locations[i] = new Location(world, cx + radius * Math.cos(angle), cy, cz + radius * Math.sin(angle));
         }
 
         return locations;
     }
     
-    private ArrayList<Location> getCircleReverse(Location center, double radius, int amount) {
-        World world = center.getWorld();
-        double increment = (2 * Math.PI) / amount;
-        ArrayList<Location> locations = new ArrayList<>();
-
-        for (int i = 0; i < amount; i++) {
-            double angle = i * increment;
-            double x = center.getX() - (radius * Math.cos(angle));
-            double z = center.getZ() - (radius * Math.sin(angle));
-            locations.add(new Location(world, x, center.getY(), z));
-        }
-
-        return locations;
-    }
-    
-    private Collection<Entity> getNearbyEntities(Location location, double x, double y, double z) {
-        final World world = location.getWorld();
-        
-        try {
-            return world.getNearbyEntities(location, x, y, z);
-        } catch (Exception ignored) {}
-
-        return new ArrayList<>();
-    }
-
     private boolean noPlayers(Location location, double range) {
-        double rangeSquared = range * range;
-        World world = location.getWorld();
-
-        for (Player player : world.getPlayers()) {
-            if (distanceSquared(player.getX(), player.getY(), player.getZ(), location) <= rangeSquared) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static double distanceSquared(double x, double y, double z, Location location) {
-        return NumberConversions.square(x - location.getX())
-                + NumberConversions.square(y - location.getY())
-                + NumberConversions.square(z - location.getZ());
+        return location.getWorld().getNearbyPlayers(location, range).isEmpty();
     }
     
     private int randomColor() {
-        return random.nextInt(255);
+        return ThreadLocalRandom.current().nextInt(255);
     }
     
 }

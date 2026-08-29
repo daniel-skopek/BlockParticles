@@ -10,7 +10,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Server;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -21,7 +20,6 @@ import org.bukkit.util.Vector;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class FountainListener implements Listener {
@@ -32,7 +30,7 @@ public class FountainListener implements Listener {
 
     private static final ParticleManager particleManager = plugin.getParticleManager();
     
-    private static final Random random = ThreadLocalRandom.current();
+    private static final ThreadLocalRandom random = ThreadLocalRandom.current();
 
     private static final List<String> pokemonHeads = Arrays.asList(
             "4a786e4e35b59d91eb6454ef26b7b0683761d6b11f1d63c7740af17aa3f",
@@ -175,7 +173,7 @@ public class FountainListener implements Listener {
             "f5612dc7b86d71afc1197301c15fd979e9f39e7b1f41d8f1ebdf8115576e2e");
     
     private static float randomVector() {
-        return (float) -.1 + (float) (Math.random() * ((.1 - -.1)));
+        return (float) (-.1 + ThreadLocalRandom.current().nextDouble(.2));
     }
     
     public static void startCustomFountain(Location loc, String id, String fountainName) {
@@ -214,28 +212,28 @@ public class FountainListener implements Listener {
 
                 final Item fleshItem = loc.getWorld().dropItem(loc.clone().add(.5, 1, .5), flesh);
 
-                fleshItem.customName(Component.text(new Random().nextInt(Integer.MAX_VALUE)));
+                fleshItem.customName(Component.text(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE)));
                 fleshItem.setCustomNameVisible(false);
                 fleshItem.setCanMobPickup(false);
                 fleshItem.setCanPlayerPickup(false);
 
                 final Item redstoneItem = loc.getWorld().dropItem(loc.clone().add(.5, 1, .5), redstone);
 
-                redstoneItem.customName(Component.text(new Random().nextInt(Integer.MAX_VALUE)));
+                redstoneItem.customName(Component.text(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE)));
                 redstoneItem.setCustomNameVisible(false);
                 redstoneItem.setCanMobPickup(false);
                 redstoneItem.setCanPlayerPickup(false);
 
                 final Item boneItem = loc.getWorld().dropItem(loc.clone().add(.5, 1, .5), bone);
 
-                boneItem.customName(Component.text(new Random().nextInt(Integer.MAX_VALUE)));
+                boneItem.customName(Component.text(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE)));
                 boneItem.setCustomNameVisible(false);
                 boneItem.setCanMobPickup(false);
                 boneItem.setCanPlayerPickup(false);
 
                 final Item pumpkinItem = loc.getWorld().dropItem(loc.clone().add(.5, 1, .5), pumpkin);
 
-                pumpkinItem.customName(Component.text(new Random().nextInt(Integer.MAX_VALUE)));
+                pumpkinItem.customName(Component.text(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE)));
                 pumpkinItem.setCustomNameVisible(false);
                 pumpkinItem.setCanMobPickup(false);
                 pumpkinItem.setCanPlayerPickup(false);
@@ -276,21 +274,21 @@ public class FountainListener implements Listener {
 
                 final Item emeraldItem = loc.getWorld().dropItem(loc.clone().add(.5, 1, .5), emerald);
 
-                emeraldItem.customName(Component.text(new Random().nextInt(Integer.MAX_VALUE)));
+                emeraldItem.customName(Component.text(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE)));
                 emeraldItem.setCustomNameVisible(false);
                 emeraldItem.setCanMobPickup(false);
                 emeraldItem.setCanPlayerPickup(false);
 
                 final Item diamondItem = loc.getWorld().dropItem(loc.clone().add(.5, 1, .5), diamond);
 
-                diamondItem.customName(Component.text(new Random().nextInt(Integer.MAX_VALUE)));
+                diamondItem.customName(Component.text(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE)));
                 diamondItem.setCustomNameVisible(false);
                 diamondItem.setCanMobPickup(false);
                 diamondItem.setCanPlayerPickup(false);
 
                 final Item goldItem = loc.getWorld().dropItem(loc.clone().add(.5, 1, .5), gold);
 
-                goldItem.customName(Component.text(new Random().nextInt(Integer.MAX_VALUE)));
+                goldItem.customName(Component.text(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE)));
                 goldItem.setCustomNameVisible(false);
                 goldItem.setCanMobPickup(false);
                 goldItem.setCanPlayerPickup(false);
@@ -466,10 +464,7 @@ public class FountainListener implements Listener {
     @SuppressWarnings("deprecation")
     private static List<Entity> getNearbyEntities(Location loc, double x, double y, double z) {
         if (loc == null || loc.getWorld() == null) return new ArrayList<>();
-        FallingBlock ent = loc.getWorld().spawnFallingBlock(loc.subtract(0, 1, 0), Material.TRIPWIRE, (byte) 0);
-        List<Entity> out = ent.getNearbyEntities(x, y, z);
-        ent.remove();
-        return out;
+        return new ArrayList<>(loc.getWorld().getNearbyEntities(loc, x, y, z));
     }
     
     @EventHandler
